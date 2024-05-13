@@ -13,6 +13,7 @@
             align-items: center;
             height: 100vh;
             background-color: #f0f0f0;
+            overflow: auto; /* Make it possible to still scroll up when the table is open */
         }
         #container {
             text-align: center;
@@ -21,14 +22,16 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
         }
-        #ort {
+        #location {
             margin-bottom: 20px;
+            background-color: #ECECEC; /* Change the background color of the selection box */
         }
         #wetter {
             margin-top: 20px;
+            text-align: left; /* Align the weather data to the right */
         }
         button {
-            background-color: #4CAF50;
+            background-color: #00A97A; /* Change the button color */
             color: white;
             padding: 15px 32px;
             text-align: center;
@@ -43,40 +46,142 @@
         button:hover {
             background-color: #45a049;
         }
+        #download {
+            margin: auto;
+            display: block; /* Center the download button */
+            margin-top: 20px; /* Add space between the data and the download button */
+        }
+        #nachricht {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: none; /* Make the box for the message not visible before pressing on show weatherdata */
+        }
+        #forecastButton {
+        display: none; /* Keep the button hidden initially */
+        margin: 20px auto; /* Add space above and center the button */
+        }
+        #forecast {
+            margin-top: 20px;
+            text-align: center;
+            display: none; /* Make the forecast table not visible before pressing on show forecast */
+        }
+        #forecast table {
+            margin: auto;
+            width: 80%;
+            max-width: 600px;
+            border-collapse: collapse;
+            border: 1px solid black;
+            background-color: #ffffff; /* Change the background color of the table */
+            padding: 10px;
+            margin: 20px;
+        }
+        #forecast th {
+            background-color: #F2F2F2; /* Change the background color of the table header */
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid black;
+        }
+        #forecast td {
+            border: 1px solid black;
+        }
     </style>
 </head>
 <body>
     <div id="container">
-        Ort: <input type="text" id="ort" value="Malsfeld"><br>
-        <button onclick="getWetter()">Wetter abrufen</button>
+        Location: <input type="text" id="location" value=""><br>
+        <button onclick="getWetter()">Show Weatherdata</button>
         <div id="wetter"></div>
-        <button id="download" style="display: none;" onclick="downloadPDF()">Als PDF herunterladen</button>
+        <div id="nachricht"></div> <!-- Add a box for the message -->
+        <button id="forecastButton" onclick="toggleForecast()" style="display: none;">Show Forecast</button> <!-- Add a Forecast button -->
+        <div id="forecast"></div> <!-- Add a div for the forecast table -->
+        <button id="download" style="display: none;" onclick="downloadPDF()">Download Data</button>
     </div>
 
     <script>
         function getWetter() {
-            let ort = document.getElementById('ort').value;
-            let api_url = `https://api.openweathermap.org/data/2.5/weather?q=${ort}&appid=e51dcbb81a09bfbf4de0a78f54397991`;
+            let location = document.getElementById('location').value;
+            let api_url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=e51dcbb81a09bfbf4de0a78f54397991`;
 
             fetch(api_url)
             .then(response => response.json())
             .then(data => {
                 let temperatur = data.main.temp - 273.15;
                 let wetter = data.weather[0].description;
-                let nachricht = temperatur > 20 && data.weather[0].main == 'Clear' ? 'Arbeiten im Außendienst möglich' : 'Arbeiten im Außendienst nicht empfohlen';
+                let windSpeed = data.wind.speed;
+                let humidity = data.main.humidity;
+                let rainProbability = data.rain ? data.rain['1h'] : 0; // Add rain probability
+                let nachricht = temperatur > 10 && ['Rain', 'Snow', 'Extreme'].indexOf(data.weather[0].main) === -1 ? 'Working outside is possible' : 'Working outside is not recommended';
 
-                document.getElementById('wetter').innerHTML = `Temperatur: ${temperatur.toFixed(2)}°C, Wetter: ${wetter}, Nachricht: ${nachricht}`;
+                document.getElementById('wetter').innerHTML = `<b>Temperature:</b> ${temperatur.toFixed(2)}°C<br><b>Sky:</b> ${wetter}<br><b>Wind Speed:</b> ${windSpeed} m/s<br><b>Humidity:</b> ${humidity}%<br><b>Rain Probability:</b> ${rainProbability}%`;
+                document.getElementById('nachricht').innerText = nachricht; // Display the message in the box
+                document.getElementById('nachricht').style.display = 'block'; // Make the box for the message visible after pressing on show weatherdata
+                document.getElementById('forecastButton').style.display = 'block'; // Make the Forecast button visible after pressing on show weatherdata
                 document.getElementById('download').style.display = 'block';
             })
             .catch(error => console.error('Fehler:', error));
         }
 
+        function toggleForecast() {
+            let forecast = document.getElementById('forecast');
+            let forecastButton = document.getElementById('forecastButton');
+
+            if (forecast.style.display === 'none') {
+                getForecast();
+                forecast.style.display = 'block'; // Show the forecast table
+                forecastButton.innerText = 'Hide Forecast'; // Change the Forecast button text to 'Hide Forecast'
+            } else {
+                forecast.style.display = 'none'; // Hide the forecast table
+                forecastButton.innerText = 'Show Forecast'; // Change the Forecast button text to 'Show Forecast'
+            }
+        }
+
+        function getForecast() {
+            let location = document.getElementById('location').value;
+            let forecast_url = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=e51dcbb81a09bfbf4de0a78f54397991`;
+
+        fetch(forecast_url)
+            .then(response => response.json())
+            .then(data => {
+            let forecastTable = '<table><tr><th>Date</th><th>Temperature</th><th>Sky</th><th>Wind Speed</th><th>Humidity</th><th>Rain Probability</th></tr>';
+
+            let currentDate = '';
+                for (let i = 0; i < data.list.length; i++) { // Loop through the forecast data
+                let date = new Date(data.list[i].dt * 1000).toLocaleDateString();
+
+                    if (date !== currentDate) {
+                        currentDate = date;
+                        let temperatur = data.list[i].main.temp - 273.15;
+                        let wetter = data.list[i].weather[0].description;
+                        let windSpeed = data.list[i].wind.speed;
+                        let humidity = data.list[i].main.humidity;
+                        let rainProbability = data.list[i].rain ? data.list[i].rain['3h'] : 0; // Add rain probability
+
+                forecastTable += `<tr><td>${date}</td><td>${temperatur.toFixed(2)}°C</td><td>${wetter}</td><td>${windSpeed} m/s</td><td>${humidity}%</td><td>${rainProbability}%</td></tr>`;
+            }
+
+            // Break the loop after 4 days
+            if (new Date(currentDate) > new Date().setDate(new Date().getDate() + 4)) {
+                break;
+            }
+        }
+
+        forecastTable += '</table>';
+
+        document.getElementById('forecast').innerHTML = forecastTable; // Display the forecast table
+    })
+    .catch(error => console.error('Fehler:', error));
+}
+
         function downloadPDF() {
             let doc = new jsPDF();
             let wetter = document.getElementById('wetter').innerText;
+            let location = document.getElementById('location').value;
+            let capitalizedLocation = location.charAt(0).toUpperCase() + location.slice(1);
 
             doc.text(wetter, 10, 10);
-            doc.save('wetter.pdf');
+            doc.save(`Weatherdata of ${capitalizedLocation}.pdf`);
         }
     </script>
 </body>
