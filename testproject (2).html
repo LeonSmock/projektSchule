@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <title>Wetterdaten</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div id="container">
+        Location: <input type="text" id="location" value=""><br>
+        Date (YYYY-MM-DD): <input type="text" id="date" value=""><br> <!-- Add an input field for the date -->
+        <button onclick="getWetter()">Show Weatherdata</button>
+        <div id="wetter"></div>
+        <div id="nachricht"></div> <!-- Add a box for the message -->
+        <button id="forecastButton" onclick="toggleForecast()" style="display: none;">Show Forecast</button> <!-- Add a Forecast button -->
+        <div id="forecast"></div> <!-- Add a div for the forecast table -->
+        <button id="download" style="display: none;" onclick="downloadPDF()">Download Data</button>
+    </div>
+
+    <script>
+        function getWetter() {
+            let location = document.getElementById('location').value;
+            let date = document.getElementById('date').value || new Date().toISOString().split('T')[0]; // Get the date from the input field or use the current date if no value is inserted
+            let api_url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&date=${date}&appid=e51dcbb81a09bfbf4de0a78f54397991`; // Add the date to the API URL
+
+            fetch(api_url)
+            .then(response => response.json())
+            .then(data => {
+                let temperatur = data.main.temp - 273.15;
+                let wetter = data.weather[0].description;
+                let windSpeed = data.wind.speed;
+                let humidity = data.main.humidity;
+                let rainProbability = data.rain ? data.rain['1h'] : 0; // Add rain probability
+                let nachricht = temperatur > 10 && ['Rain', 'Snow', 'Extreme'].indexOf(data.weather[0].main) === -1 ? 'Working outside is possible' : 'Working outside is not recommended';
+
+                document.getElementById('wetter').innerHTML = `<b>Temperature:</b> ${temperatur.toFixed(2)}°C<br><b>Sky:</b> ${wetter}<br><b>Wind Speed:</b> ${windSpeed} m/s<br><b>Humidity:</b> ${humidity}%<br><b>Rain Probability:</b> ${rainProbability}%`;
+                document.getElementById('nachricht').innerText = nachricht; // Display the message in the box
+                document.getElementById('nachricht').style.display = 'block'; // Make the box for the message visible after pressing on show weatherdata
+                document.getElementById('forecastButton').style.display = 'block'; // Make the Forecast button visible after pressing on show weatherdata
+                document.getElementById('download').style.display = 'block';
+
+                    if (nachricht === 'Working outside is possible') {
+                        document.getElementById('nachricht').style.backgroundColor = 'lightgreen';
+                    } else {
+                        document.getElementById('nachricht').style.backgroundColor = 'lightcoral';
+                    }
+            })
+
+            .catch(error => console.error('error:', error));
+        }
+
+            document.getElementById('location').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    getWetter();
+                }
+            });
+
+        function toggleForecast() {
+            let forecast = document.getElementById('forecast');
+            let forecastButton = document.getElementById('forecastButton');
+
+            if (forecast.style.display === 'none') {
+                getForecast();
+                forecast.style.display = 'block'; // Show the forecast table
+                forecastButton.innerText = 'Hide Forecast'; // Change the Forecast button text to 'Hide Forecast'
+            } else {
+                forecast.style.display = 'none'; // Hide the forecast table
+                forecastButton.innerText = 'Show Forecast'; // Change the Forecast button text to 'Show Forecast'
+            }
+        }
+
+        function getForecast() {
+            let location = document.getElementById('location').value;
+            let date = document.getElementById('date').value || new Date().toISOString().split('T')[0]; // Get the date from the input field or use the current date if no value is inserted
+            let forecast_url = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&date=${date}&appid=e51dcbb81a09bfbf4de0a78f54397991`; // Add the date to the API URL
+
+        fetch(forecast_url)
+            .then(response => response.json())
+            .then(data => {
+            let forecastTable = '<table><tr><th>Date</th><th>Temperature</th><th>Sky</th><th>Wind Speed</th><th>Humidity</th><th>Rain Probability</th></tr>';
+
+            let currentDate = '';
+                for (let i = 0; i < data.list.length; i++) { // Loop through the forecast data
+                let date = new Date(data.list[i].dt * 1000).toLocaleDateString();
+
+                    if (date !== currentDate) {
+                        currentDate = date;
+                        let temperatur = data.list[i].main.temp - 273.15;
+                        let wetter = data.list[i].weather[0].description;
+                        let windSpeed = data.list[i].wind.speed;
+                        let humidity = data.list[i].main.humidity;
+                        let rainProbability = data.list[i].rain ? data.list[i].rain['3h'] : 0; // Add rain probability
+
+                forecastTable += `<tr><td>${date}</td><td>${temperatur.toFixed(2)}°C</td><td>${wetter}</td><td>${windSpeed} m/s</td><td>${humidity}%</td><td>${rainProbability}%</td></tr>`;
+            }
+
+            // Break the loop after 4 days
+            if (new Date(currentDate) > new Date().setDate(new Date().getDate() + 4)) {
+                break;
+            }
+        }
+
+        forecastTable += '</table>';
+
+        document.getElementById('forecast').innerHTML = forecastTable; // Display the forecast table
+    })
+    .catch(error => console.error('error:', error));
+}
+
+function downloadPDF() {
+    let doc = new jsPDF();
+    let wetter = document.getElementById('wetter').innerText;
+    let forecast = document.getElementById('forecast').innerText;
+    let location = document.getElementById('location').value;
+    let capitalizedLocation = location.charAt(0).toUpperCase() + location.slice(1);
+    var imgData = 'data:image/png;base64,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';
+    // Set the font to 'Helvetica'
+    doc.setFont('Helvetica');
+
+    // Add a banner at the top of the page
+    doc.setFillColor(218, 218, 218); // Set the banner color to black
+    doc.rect(0, 0, doc.internal.pageSize.width, 30, 'F'); // Draw the banner
+
+    // Add title
+    doc.setFontSize(22);
+    doc.setFontType("bold");
+    doc.setTextColor(0, 169, 122); // Set the text color to white
+    doc.text(`Weather-Data of ${capitalizedLocation}`, 10, 20); // Align the title on the left side
+
+    // Reset text color to black for the rest of the document
+    doc.setTextColor(0, 0, 0);
+
+    // Add weather data
+    doc.setFontSize(16);
+    doc.setFontType("normal");
+    doc.text(wetter, 80, 45);
+
+
+    // Add a footnote
+    doc.setFontSize(12);
+    doc.text('Weather-Data for B. Braun SE employees - provided by Openweather', 20, doc.internal.pageSize.height - 20);
+
+    // Add an image at the top right
+    doc.addImage(imgData, 'PNG', doc.internal.pageSize.width - 90, 5, 80, 20);
+
+    doc.save(`Weatherdata of ${capitalizedLocation}.pdf`);
+}
+
+
+    </script>
+</body>
+</html>
