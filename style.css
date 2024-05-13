@@ -1,1 +1,83 @@
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            overflow: auto; /* Make it possible to still scroll up when the table is open */
+        }
+        #container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+        }
+        #location {
+            margin-bottom: 20px;
+            background-color: #ECECEC; /* Change the background color of the selection box */
+        }
+        #wetter {
+            margin-top: 20px;
+            text-align: left; /* Align the weather data to the right */
+        }
+        button {
+            background-color: #00A97A; /* Change the button color */
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #download {
+            margin: auto;
+            display: block; /* Center the download button */
+            margin-top: 20px; /* Add space between the data and the download button */
+        }
+        #nachricht {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: none; /* Make the box for the message not visible before pressing on show weatherdata */
+        }
+        #forecastButton {
+        display: none; /* Keep the button hidden initially */
+        margin: 20px auto; /* Add space above and center the button */
+        }
+        #forecast {
+            margin-top: 20px;
+            text-align: center;
+            display: none; /* Make the forecast table not visible before pressing on show forecast */
+        }
+        #forecast table {
+            margin: auto;
+            width: 80%;
+            max-width: 600px;
+            border-collapse: collapse;
+            border: 1px solid black;
+            background-color: #ffffff; /* Change the background color of the table */
+            padding: 10px;
+            margin: 20px;
+        }
+        #forecast th {
+            background-color: #F2F2F2; /* Change the background color of the table header */
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid black;
+        }
+        #forecast td {
+            border: 1px solid black;
+        }
 
