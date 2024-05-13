@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wetterdaten</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+        }
+        #ort {
+            margin-bottom: 20px;
+        }
+        #wetter {
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        Ort: <input type="text" id="ort" value="Malsfeld"><br>
+        <button onclick="getWetter()">Wetter abrufen</button>
+        <div id="wetter"></div>
+        <button id="download" style="display: none;" onclick="downloadPDF()">Als PDF herunterladen</button>
+    </div>
+
+    <script>
+        function getWetter() {
+            let ort = document.getElementById('ort').value;
+            let api_url = `https://api.openweathermap.org/data/2.5/weather?q=${ort}&appid=e51dcbb81a09bfbf4de0a78f54397991`;
+
+            fetch(api_url)
+            .then(response => response.json())
+            .then(data => {
+                let temperatur = data.main.temp - 273.15;
+                let wetter = data.weather[0].description;
+                let nachricht = temperatur > 20 && data.weather[0].main == 'Clear' ? 'Arbeiten im Außendienst möglich' : 'Arbeiten im Außendienst nicht empfohlen';
+
+                document.getElementById('wetter').innerHTML = `Temperatur: ${temperatur.toFixed(2)}°C, Wetter: ${wetter}, Nachricht: ${nachricht}`;
+                document.getElementById('download').style.display = 'block';
+            })
+            .catch(error => console.error('Fehler:', error));
+        }
+
+        function downloadPDF() {
+            let doc = new jsPDF();
+            let wetter = document.getElementById('wetter').innerText;
+
+            doc.text(wetter, 10, 10);
+            doc.save('wetter.pdf');
+        }
+    </script>
+</body>
+</html>
